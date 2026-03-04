@@ -1,0 +1,30 @@
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# PHP dependencies (if Composer is added later)
+vendor/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Logs and runtime files
+*.log
+*.tmp
+*.cache
+
+# XAMPP / PHP session and upload temp artifacts (if created in project)
+tmp/
+temp/
+sessions/
+uploads/
+

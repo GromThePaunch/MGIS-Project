@@ -1,0 +1,150 @@
+body {
+    margin: 0;
+    font-family: Georgia, 'Times New Roman', serif;
+    background: linear-gradient(180deg, #f4efe6 0%, #efe4d1 100%);
+    color: #1f1a17;
+}
+
+.site-header,
+.site-footer,
+.page-shell {
+    padding: 1.25rem 5vw;
+}
+
+.site-header,
+.site-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 2rem;
+    background: #f7f1e8;
+    border-bottom: 1px solid #d9c7ab;
+}
+
+.site-footer {
+    border-top: 1px solid #d9c7ab;
+    border-bottom: 0;
+}
+
+.site-nav {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.site-nav a,
+a.button,
+button.button {
+    color: #1f1a17;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.brand {
+    font-size: 1.8rem;
+    text-decoration: none;
+    color: #7a2f19;
+    font-weight: 700;
+}
+
+.tagline,
+.eyebrow {
+    color: #6b5845;
+}
+
+.hero,
+.detail-layout,
+.content-panel {
+    display: grid;
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.hero,
+.detail-layout {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.alert-card,
+.product-card,
+.preview-panel,
+.detail-form,
+.content-panel {
+    background: rgba(255, 251, 245, 0.88);
+    border: 1px solid #d9c7ab;
+    border-radius: 18px;
+    padding: 1.25rem;
+}
+
+.catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.badge {
+    display: inline-block;
+    margin-bottom: 0.75rem;
+    padding: 0.25rem 0.6rem;
+    background: #7a2f19;
+    color: #fff7f0;
+    border-radius: 999px;
+    font-size: 0.8rem;
+}
+
+.price,
+.grand-total {
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.button,
+button.button {
+    display: inline-block;
+    border: 0;
+    border-radius: 999px;
+    background: #d88838;
+    padding: 0.7rem 1rem;
+    cursor: pointer;
+}
+
+.detail-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.detail-form label {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.color-swatches {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.swatch {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    border: 2px solid #d9c7ab;
+}
+
+.cart-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.cart-table th,
+.cart-table td {
+    text-align: left;
+    padding: 0.75rem;
+    border-bottom: 1px solid #d9c7ab;
+}
+
+@media (max-width: 640px) {
+    .site-header,
+    .site-footer {
+        display: block;
+    }
+}
