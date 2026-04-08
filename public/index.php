@@ -1,7 +1,43 @@
 <?php
+require __DIR__ . '/includes/database_connection.php';
 require __DIR__ . '/includes/config.php';
-require __DIR__ . '/includes/data.php';
+
 $pageTitle = 'Catalog | ' . $siteName;
+
+// Fetch active designs (products) from the database
+$stmt = $pdo->prepare("
+    SELECT 
+        d.design_id AS id,
+        d.name,
+        d.description,
+        d.price,
+        d.image_base_url,
+        d.is_active,
+        CASE 
+            WHEN d.price < 20 THEN 'Sale' 
+            ELSE '' 
+        END AS badge
+    FROM designs d
+    WHERE d.is_active = TRUE
+    ORDER BY d.name ASC
+");
+
+$stmt->execute();
+$products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// If no products yet, provide fallback scaffold data (for development)
+if (empty($products)) {
+    $products = [
+        [
+            'id' => 1,
+            'name' => 'MGIS Logo Tee',
+            'description' => 'Single-color print on a standard tee with four color choices and sizes S through 2XL.',
+            'price' => 19.99,
+            'badge' => 'New'
+        ],
+    ];
+}
+
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="hero">
@@ -23,7 +59,7 @@ require __DIR__ . '/includes/header.php';
             <h2><?= htmlspecialchars($product['name']) ?></h2>
             <p>Single-color print on a standard tee with four color choices and sizes S through 2XL.</p>
             <p class="price">$<?= number_format($product['price'], 2) ?></p>
-            <a class="button" href="/pages/product.php?id=<?= urlencode((string) $product['id']) ?>">View Item</a>
+            <a class="button" href="pages/product.php?id=<?= urlencode((string) $product['id']) ?>">View Item</a>
         </article>
     <?php endforeach; ?>
 </section>

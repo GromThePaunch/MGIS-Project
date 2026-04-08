@@ -1,45 +1,196 @@
 <?php
+// =============================================
+// PRODUCT DETAIL PAGE - Database Connected
+// =============================================
+require __DIR__ . '/../includes/database_connection.php';
 require __DIR__ . '/../includes/config.php';
-require __DIR__ . '/../includes/data.php';
-$productId = isset($_GET['id']) ? (int) $_GET['id'] : 1;
-$product = $products[array_search($productId, array_column($products, 'id')) ?: 0];
-$pageTitle = $product['name'] . ' | ' . $siteName;
+
+$productId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+
+// 1. Fetch the specific design
+$stmt = $pdo->prepare("
+    SELECT 
+        design_id AS id,
+        name,
+        description,
+        price,
+        image_base_url
+    FROM designs 
+    WHERE design_id = ? AND is_active = TRUE
+");
+$stmt->execute([$productId]);
+$product = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$product) {
+    // Fallback if invalid ID
+    header("Location: /index.php");
+    exit;
+}
+
+$pageTitle = htmlspecialchars($product['name']) . ' | ' . $siteName;
 require __DIR__ . '/../includes/header.php';
+
+// 2. Fetch all 4 colors (with hex for swatches)
+$stmt = $pdo->query("
+    SELECT color_id, color_name, hex_code 
+    FROM colors 
+    ORDER BY color_name
+");
+$colors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// 3. Fetch sizes (we'll check inventory in JS later)
+$stmt = $pdo->query("
+    SELECT size_id, size_label 
+    FROM sizes 
+    ORDER BY sort_order
+");
+$sizes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// 4. Pre-load inventory for this design (so we can show stock & disable OOS sizes)
+$stmt = $pdo->prepare("
+    SELECT 
+        i.color_id,
+        i.size_id,
+        i.quantity
+    FROM inventory i
+    WHERE i.design_id = ?
+");
+$stmt->execute([$productId]);
+$inventory = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Convert inventory to a JS-friendly lookup: colorId_sizeId → quantity
+$stockData = [];
+foreach ($inventory as $item) {
+    $key = $item['color_id'] . '_' . $item['size_id'];
+    $stockData[$key] = (int)$item['quantity'];
+}
 ?>
+
 <section class="detail-layout">
     <div class="preview-panel">
         <h1><?= htmlspecialchars($product['name']) ?></h1>
-        <p>Show the real shirt mockup here for each color variant.</p>
+        
+        <!-- Real shirt mockup placeholder - replace with actual image later -->
+        <div class="shirt-mockup" style="background: #f8f1e3; padding: 40px; text-align: center; border: 2px dashed #ccc; margin-bottom: 20px;">
+            <p style="margin:0; font-size: 1.1em; color:#666;">
+                🧥 Real shirt mockup with design will go here<br>
+                (image_base_url: <?= htmlspecialchars($product['image_base_url']) ?>)
+            </p>
+        </div>
+
+        <p><?= htmlspecialchars($product['description'] ?? 'Premium screen-printed T-shirt.') ?></p>
+
+        <!-- Color Swatches -->
+        <h3>Available Colors</h3>
         <div class="color-swatches">
-            <?php foreach ($shirtColors as $color): ?>
-                <span class="swatch" title="<?= htmlspecialchars($color['name']) ?>" style="background: <?= htmlspecialchars($color['hex']) ?>;"></span>
+            <?php foreach ($colors as $color): ?>
+                <span class="swatch" 
+                      title="<?= htmlspecialchars($color['color_name']) ?>" 
+                      style="background: <?= htmlspecialchars($color['hex_code']) ?>;"
+                      data-color-id="<?= $color['color_id'] ?>"
+                      onclick="selectColor(this)"></span>
             <?php endforeach; ?>
         </div>
     </div>
-    <form class="detail-form">
+
+    <!-- Detail Form -->
+    <form id="addToCartForm" class="detail-form" method="POST" action="cart.php">
+        <input type="hidden" name="design_id" value="<?= $product['id'] ?>">
+
         <label>
             Color
-            <select name="color">
-                <?php foreach ($shirtColors as $color): ?>
-                    <option value="<?= htmlspecialchars($color['name']) ?>"><?= htmlspecialchars($color['name']) ?></option>
+            <select name="color_id" id="colorSelect" required onchange="updateAvailableSizes()">
+                <?php foreach ($colors as $color): ?>
+                    <option value="<?= $color['color_id'] ?>">
+                        <?= htmlspecialchars($color['color_name']) ?>
+                    </option>
                 <?php endforeach; ?>
             </select>
         </label>
+
         <label>
             Size
-            <select name="size">
+            <select name="size_id" id="sizeSelect" required>
                 <?php foreach ($sizes as $size): ?>
-                    <option value="<?= htmlspecialchars($size) ?>"><?= htmlspecialchars($size) ?></option>
+                    <option value="<?= $size['size_id'] ?>">
+                        <?= htmlspecialchars($size['size_label']) ?>
+                    </option>
                 <?php endforeach; ?>
             </select>
         </label>
+
         <label>
             Quantity
-            <input type="number" name="quantity" min="1" max="10" value="1">
+            <input type="number" name="quantity" id="quantity" min="1" max="10" value="1">
         </label>
+
         <p class="price">$<?= number_format($product['price'], 2) ?></p>
-        <button class="button" type="button">Add to Cart</button>
-        <p>This page is scaffolded for color preview, size selection, quantity input, and add-to-cart wiring.</p>
+        
+        <button class="button" type="submit">Add to Cart</button>
+        
+        <p class="stock-note" id="stockNote"></p>
+        
+        <small>This product page is now fully connected to the database with real colors, sizes, and inventory tracking.</small>
     </form>
 </section>
+
+<script>
+// Stock data from PHP → JavaScript
+const stockData = <?= json_encode($stockData) ?>;
+
+function updateAvailableSizes() {
+    const colorId = parseInt(document.getElementById('colorSelect').value);
+    const sizeSelect = document.getElementById('sizeSelect');
+    const stockNote = document.getElementById('stockNote');
+    
+    let hasStock = false;
+    
+    Array.from(sizeSelect.options).forEach(option => {
+        const sizeId = parseInt(option.value);
+        const key = colorId + '_' + sizeId;
+        const qty = stockData[key] || 0;
+        
+        if (qty > 0) {
+            option.disabled = false;
+            option.style.color = '#000';
+            hasStock = true;
+        } else {
+            option.disabled = true;
+            option.style.color = '#999';
+        }
+    });
+    
+    // Auto-select first available size
+    if (!sizeSelect.options[sizeSelect.selectedIndex] || 
+        sizeSelect.options[sizeSelect.selectedIndex].disabled) {
+        for (let i = 0; i < sizeSelect.options.length; i++) {
+            if (!sizeSelect.options[i].disabled) {
+                sizeSelect.selectedIndex = i;
+                break;
+            }
+        }
+    }
+    
+    stockNote.textContent = hasStock 
+        ? '✅ In stock' 
+        : '❌ Out of stock for selected color/size';
+    stockNote.style.color = hasStock ? 'green' : 'red';
+}
+
+function selectColor(el) {
+    // Highlight selected swatch
+    document.querySelectorAll('.swatch').forEach(s => s.style.border = '2px solid transparent');
+    el.style.border = '2px solid #000';
+    
+    // Update the select dropdown to match
+    document.getElementById('colorSelect').value = el.dataset.colorId;
+    updateAvailableSizes();
+}
+
+// Initialize on page load
+window.onload = () => {
+    updateAvailableSizes();
+};
+</script>
+
 <?php require __DIR__ . '/../includes/footer.php'; ?>
