@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/../includes/config.php';
+require __DIR__ . '/../includes/init.php';
 $pageTitle = 'Register | ' . $siteName;
 require __DIR__ . '/../includes/header.php';
 ?>

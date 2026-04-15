@@ -1,9 +1,8 @@
 <?php
 // =============================================
-// PRODUCT DETAIL PAGE - Database Connected
+// PRODUCT DETAIL PAGE - Database Connected + Session Cart
 // =============================================
-require __DIR__ . '/../includes/database_connection.php';
-require __DIR__ . '/../includes/config.php';
+require __DIR__ . '/../includes/init.php';   // ← Changed to init.php
 
 $productId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
@@ -22,7 +21,6 @@ $stmt->execute([$productId]);
 $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$product) {
-    // Fallback if invalid ID
     header("Location: /index.php");
     exit;
 }
@@ -30,7 +28,7 @@ if (!$product) {
 $pageTitle = htmlspecialchars($product['name']) . ' | ' . $siteName;
 require __DIR__ . '/../includes/header.php';
 
-// 2. Fetch all 4 colors (with hex for swatches)
+// 2. Fetch colors and sizes (your existing code - unchanged)
 $stmt = $pdo->query("
     SELECT color_id, color_name, hex_code 
     FROM colors 
@@ -38,7 +36,6 @@ $stmt = $pdo->query("
 ");
 $colors = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 3. Fetch sizes (we'll check inventory in JS later)
 $stmt = $pdo->query("
     SELECT size_id, size_label 
     FROM sizes 
@@ -46,7 +43,7 @@ $stmt = $pdo->query("
 ");
 $sizes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 4. Pre-load inventory for this design (so we can show stock & disable OOS sizes)
+// 3. Pre-load inventory for this design
 $stmt = $pdo->prepare("
     SELECT 
         i.color_id,
@@ -58,7 +55,6 @@ $stmt = $pdo->prepare("
 $stmt->execute([$productId]);
 $inventory = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Convert inventory to a JS-friendly lookup: colorId_sizeId → quantity
 $stockData = [];
 foreach ($inventory as $item) {
     $key = $item['color_id'] . '_' . $item['size_id'];
@@ -70,7 +66,6 @@ foreach ($inventory as $item) {
     <div class="preview-panel">
         <h1><?= htmlspecialchars($product['name']) ?></h1>
         
-        <!-- Real shirt mockup placeholder - replace with actual image later -->
         <div class="shirt-mockup" style="background: #f8f1e3; padding: 40px; text-align: center; border: 2px dashed #ccc; margin-bottom: 20px;">
             <p style="margin:0; font-size: 1.1em; color:#666;">
                 🧥 Real shirt mockup with design will go here<br>
@@ -80,7 +75,6 @@ foreach ($inventory as $item) {
 
         <p><?= htmlspecialchars($product['description'] ?? 'Premium screen-printed T-shirt.') ?></p>
 
-        <!-- Color Swatches -->
         <h3>Available Colors</h3>
         <div class="color-swatches">
             <?php foreach ($colors as $color): ?>
@@ -93,8 +87,21 @@ foreach ($inventory as $item) {
         </div>
     </div>
 
-    <!-- Detail Form -->
-    <form id="addToCartForm" class="detail-form" method="POST" action="cart.php">
+    <!-- Updated Form -->
+    <?php if (isset($_SESSION['success'])): ?>
+        <div style="background:#d4edda; color:#155724; padding:12px; margin:15px 0; border-radius:4px;">
+            <?= htmlspecialchars($_SESSION['success']) ?>
+        </div>
+        <?php unset($_SESSION['success']); ?>
+    <?php endif; ?>
+
+    <?php if (isset($_SESSION['error'])): ?>
+        <div style="background:#f8d7da; color:#721c24; padding:12px; margin:15px 0; border-radius:4px;">
+            <?= htmlspecialchars($_SESSION['error']) ?>
+        </div>
+        <?php unset($_SESSION['error']); ?>
+    <?php endif; ?> 
+    <form id="addToCartForm" class="detail-form" method="POST" action="<?= $basepath ?>pages/add_to_cart.php">
         <input type="hidden" name="design_id" value="<?= $product['id'] ?>">
 
         <label>
@@ -130,12 +137,12 @@ foreach ($inventory as $item) {
         
         <p class="stock-note" id="stockNote"></p>
         
-        <small>This product page is now fully connected to the database with real colors, sizes, and inventory tracking.</small>
+        <small>This product page is now fully connected to the database.</small>
     </form>
 </section>
 
 <script>
-// Stock data from PHP → JavaScript
+// Stock data from PHP → JavaScript (your existing JS - unchanged)
 const stockData = <?= json_encode($stockData) ?>;
 
 function updateAvailableSizes() {
@@ -160,9 +167,7 @@ function updateAvailableSizes() {
         }
     });
     
-    // Auto-select first available size
-    if (!sizeSelect.options[sizeSelect.selectedIndex] || 
-        sizeSelect.options[sizeSelect.selectedIndex].disabled) {
+    if (!sizeSelect.options[sizeSelect.selectedIndex] || sizeSelect.options[sizeSelect.selectedIndex].disabled) {
         for (let i = 0; i < sizeSelect.options.length; i++) {
             if (!sizeSelect.options[i].disabled) {
                 sizeSelect.selectedIndex = i;
@@ -171,23 +176,17 @@ function updateAvailableSizes() {
         }
     }
     
-    stockNote.textContent = hasStock 
-        ? '✅ In stock' 
-        : '❌ Out of stock for selected color/size';
+    stockNote.textContent = hasStock ? '✅ In stock' : '❌ Out of stock for selected color/size';
     stockNote.style.color = hasStock ? 'green' : 'red';
 }
 
 function selectColor(el) {
-    // Highlight selected swatch
     document.querySelectorAll('.swatch').forEach(s => s.style.border = '2px solid transparent');
     el.style.border = '2px solid #000';
-    
-    // Update the select dropdown to match
     document.getElementById('colorSelect').value = el.dataset.colorId;
     updateAvailableSizes();
 }
 
-// Initialize on page load
 window.onload = () => {
     updateAvailableSizes();
 };

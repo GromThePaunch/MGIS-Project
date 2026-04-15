@@ -1,7 +1,5 @@
 <?php
-require __DIR__ . '/includes/database_connection.php';
-require __DIR__ . '/includes/config.php';
-
+require __DIR__ . '/includes/init.php';
 $pageTitle = 'Catalog | ' . $siteName;
 
 // Fetch active designs (products) from the database

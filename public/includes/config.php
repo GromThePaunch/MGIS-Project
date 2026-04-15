@@ -1,5 +1,6 @@
 <?php
 $siteName = 'Inkforge Tees';
+$basepath = '/mcm5381/TeeForgedTees/';
 $taxRate = 0.085;
 
 function shipping_cost(float $subtotal): float
@@ -18,3 +19,4 @@ function shipping_cost(float $subtotal): float
 
     return 14.99;
 }
+?>

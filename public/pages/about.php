@@ -1,6 +1,7 @@
 <?php
-require __DIR__ . '/../includes/config.php';
+require __DIR__ . '/../includes/init.php';
 $pageTitle = 'About Us | ' . $siteName;
+
 require __DIR__ . '/../includes/header.php';
 ?>
 <section class="content-panel">
