@@ -66,11 +66,15 @@ foreach ($inventory as $item) {
     <div class="preview-panel">
         <h1><?= htmlspecialchars($product['name']) ?></h1>
         
-        <div class="shirt-mockup" style="background: #f8f1e3; padding: 40px; text-align: center; border: 2px dashed #ccc; margin-bottom: 20px;">
-            <p style="margin:0; font-size: 1.1em; color:#666;">
-                🧥 Real shirt mockup with design will go here<br>
-                (image_base_url: <?= htmlspecialchars($product['image_base_url']) ?>)
-            </p>
+        <?php
+            $slug = htmlspecialchars($product['image_base_url']);
+            $defaultColor = strtolower($colors[0]['color_name']);
+        ?>
+        <div class="shirt-mockup">
+            <img id="productImage"
+                 src="<?= $basepath ?>Images/MGIS-Shirts/<?= $defaultColor ?>/<?= $slug ?>.png"
+                 alt="<?= htmlspecialchars($product['name']) ?>"
+                 data-slug="<?= $slug ?>">
         </div>
 
         <p><?= htmlspecialchars($product['description'] ?? 'Premium screen-printed T-shirt.') ?></p>
@@ -78,10 +82,11 @@ foreach ($inventory as $item) {
         <h3>Available Colors</h3>
         <div class="color-swatches">
             <?php foreach ($colors as $color): ?>
-                <span class="swatch" 
-                      title="<?= htmlspecialchars($color['color_name']) ?>" 
+                <span class="swatch"
+                      title="<?= htmlspecialchars($color['color_name']) ?>"
                       style="background: <?= htmlspecialchars($color['hex_code']) ?>;"
                       data-color-id="<?= $color['color_id'] ?>"
+                      data-color-name="<?= htmlspecialchars(strtolower($color['color_name'])) ?>"
                       onclick="selectColor(this)"></span>
             <?php endforeach; ?>
         </div>
@@ -106,9 +111,10 @@ foreach ($inventory as $item) {
 
         <label>
             Color
-            <select name="color_id" id="colorSelect" required onchange="updateAvailableSizes()">
+            <select name="color_id" id="colorSelect" required onchange="onColorChange()">
                 <?php foreach ($colors as $color): ?>
-                    <option value="<?= $color['color_id'] ?>">
+                    <option value="<?= $color['color_id'] ?>"
+                            data-color-name="<?= htmlspecialchars(strtolower($color['color_name'])) ?>">
                         <?= htmlspecialchars($color['color_name']) ?>
                     </option>
                 <?php endforeach; ?>
@@ -144,6 +150,21 @@ foreach ($inventory as $item) {
 <script>
 // Stock data from PHP → JavaScript (your existing JS - unchanged)
 const stockData = <?= json_encode($stockData) ?>;
+const imageBaseUrl = <?= json_encode($basepath . 'Images/MGIS-Shirts/') ?>;
+
+function updateProductImage() {
+    const sel = document.getElementById('colorSelect');
+    const opt = sel.options[sel.selectedIndex];
+    const colorName = opt ? opt.dataset.colorName : '';
+    const img = document.getElementById('productImage');
+    if (!img || !colorName) return;
+    img.src = imageBaseUrl + colorName + '/' + img.dataset.slug + '.png';
+}
+
+function onColorChange() {
+    updateProductImage();
+    updateAvailableSizes();
+}
 
 function updateAvailableSizes() {
     const colorId = parseInt(document.getElementById('colorSelect').value);
@@ -184,6 +205,7 @@ function selectColor(el) {
     document.querySelectorAll('.swatch').forEach(s => s.style.border = '2px solid transparent');
     el.style.border = '2px solid #000';
     document.getElementById('colorSelect').value = el.dataset.colorId;
+    updateProductImage();
     updateAvailableSizes();
 }
 

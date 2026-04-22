@@ -54,8 +54,14 @@ require __DIR__ . '/includes/header.php';
     <?php foreach ($products as $product): ?>
         <article class="product-card">
             <span class="badge"><?= htmlspecialchars($product['badge']) ?></span>
+            <?php if (!empty($product['image_base_url'])): ?>
+                <a class="product-thumb" href="pages/product.php?id=<?= urlencode((string) $product['id']) ?>">
+                    <img src="<?= $basepath ?>Images/MGIS-Shirts/black/<?= htmlspecialchars($product['image_base_url']) ?>.png"
+                         alt="<?= htmlspecialchars($product['name']) ?>">
+                </a>
+            <?php endif; ?>
             <h2><?= htmlspecialchars($product['name']) ?></h2>
-            <p>Single-color print on a standard tee with four color choices and sizes S through 2XL.</p>
+            <p><?= htmlspecialchars($product['description'] ?? 'Single-color print on a standard tee with four color choices and sizes S through 2XL.') ?></p>
             <p class="price">$<?= number_format($product['price'], 2) ?></p>
             <a class="button" href="pages/product.php?id=<?= urlencode((string) $product['id']) ?>">View Item</a>
         </article>
