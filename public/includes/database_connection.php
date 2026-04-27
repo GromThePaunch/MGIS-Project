@@ -11,9 +11,8 @@ $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
 try {
     $pdo = new PDO($dsn, $user, $pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    echo "<p>✅ Database Connection Successful!</p>";
 } catch (PDOException $e) {
-    echo "<p>❌ Connection failed: " . htmlspecialchars($e->getMessage()) . "</p>";
-    $pdo = null;
+    error_log("DB connection failed: " . $e->getMessage());
+    die("Sorry, we're having trouble connecting to the database. Please try again later.");
 }
 ?>

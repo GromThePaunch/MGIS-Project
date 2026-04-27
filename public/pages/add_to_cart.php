@@ -4,7 +4,7 @@ require __DIR__ . '/../includes/init.php';
 
 // Security: Only allow POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: /index.php");
+    header("Location: " . $basepath . "index.php");
     exit;
 }
 

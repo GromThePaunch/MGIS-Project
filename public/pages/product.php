@@ -21,7 +21,7 @@ $stmt->execute([$productId]);
 $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$product) {
-    header("Location: /index.php");
+    header("Location: " . $basepath . "index.php");
     exit;
 }
 
